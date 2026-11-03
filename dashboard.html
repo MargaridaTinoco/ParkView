@@ -60,56 +60,70 @@
             <div class="kpis" id="kpiGrid" aria-live="polite"></div>
           </section>
 
-          <section class="main-grid section">
-            <div class="panel map-panel">
-              <div class="panel-header compact">
-                <div>
-                  <h3>Mapa de parques</h3>
-                  <p>Pressão por parque (média jul–dez 2022)</p>
+          <section class="main-grid section" aria-label="Análise dos parques">
+            <div class="dashboard-column map-column">
+              <section class="panel map-panel">
+                <div class="panel-header compact">
+                  <div>
+                    <h3>Mapa de parques</h3>
+                    <p>Pressão por parque (média jul–dez 2022)</p>
+                  </div>
+                  <div class="legend" aria-label="Legenda da pressão">
+                    <div class="legend-item"><span class="legend-dot low"></span>Baixa</div>
+                    <div class="legend-item"><span class="legend-dot medium"></span>Média</div>
+                    <div class="legend-item"><span class="legend-dot high"></span>Alta</div>
+                  </div>
                 </div>
-                <div class="legend" aria-label="Legenda da pressão">
-                  <div class="legend-item"><span class="legend-dot low"></span>Baixa</div>
-                  <div class="legend-item"><span class="legend-dot medium"></span>Média</div>
-                  <div class="legend-item"><span class="legend-dot high"></span>Alta</div>
+                <div class="map-wrap">
+                  <div class="map-controls" aria-label="Controlo de zoom do mapa">
+                    <button type="button" class="zoom-btn" data-action="zoom-in" aria-label="Aumentar zoom do mapa">+</button>
+                    <button type="button" class="zoom-btn" data-action="zoom-out" aria-label="Diminuir zoom do mapa">−</button>
+                  </div>
+                  <svg id="mapSvg" viewBox="0 0 760 540" role="img" aria-label="Mapa esquemático de Lisboa com parques"></svg>
                 </div>
-              </div>
-              <div class="map-wrap">
-                <div class="map-controls" aria-label="Controlo de zoom do mapa">
-                  <button type="button" class="zoom-btn" data-action="zoom-in" aria-label="Aumentar zoom do mapa">+</button>
-                  <button type="button" class="zoom-btn" data-action="zoom-out" aria-label="Diminuir zoom do mapa">−</button>
+                <div id="parkDetail" class="park-detail" aria-live="polite"></div>
+                <div class="map-summary" id="mapSummary"></div>
+              </section>
+
+              <section class="panel timeline-panel">
+                <div class="panel-header compact">
+                  <div>
+                    <h3>Evolução mensal</h3>
+                    <p>Taxa de ocupação · julho a dezembro de 2022</p>
+                  </div>
+                  <div id="monthlyLegend" class="chart-legend" aria-label="Legenda do gráfico"></div>
                 </div>
-                <svg id="mapSvg" viewBox="0 0 760 540" role="img" aria-label="Mapa esquemático de Lisboa com parques"></svg>
-              </div>
-              <div id="parkDetail" class="park-detail" aria-live="polite"></div>
-              <div class="map-summary" id="mapSummary"></div>
+                <div class="chart-wrap">
+                  <svg id="monthlyChart" viewBox="0 0 980 300" role="img" aria-label="Gráfico de barras da ocupação mensal"></svg>
+                </div>
+                <p id="chartHint" class="chart-hint" hidden>Seleciona um parque no mapa ou no ranking para comparar a sua evolução com a média da cidade.</p>
+              </section>
             </div>
 
-            <aside class="panel side-panel">
-              <div class="panel-header compact">
-                <div>
-                  <h3>Oferta vs. procura por zona</h3>
-                  <p>Capacidade e lugares ocupados</p>
+            <div class="dashboard-column insights-column">
+              <section class="panel zone-panel">
+                <div class="panel-header compact">
+                  <div>
+                    <h3>Ocupação por zona</h3>
+                    <p>Percentagem ocupada e lugares utilizados</p>
+                  </div>
                 </div>
-              </div>
-              <div id="zoneChart" class="zone-chart" aria-live="polite"></div>
-              <div class="ranking-block">
-                <h4>Top 5 parques por ocupação</h4>
-                <div id="rankingList" class="ranking-list" aria-live="polite"></div>
-              </div>
-            </aside>
-          </section>
+                <div id="zoneChart" class="zone-chart" aria-live="polite"></div>
+              </section>
 
-          <section class="panel timeline-panel">
-            <div class="panel-header compact">
-              <div>
-                <h3>Evolução mensal da ocupação</h3>
-                <p>Taxa média de ocupação · julho a dezembro de 2022</p>
-              </div>
+              <section class="panel highlights-panel">
+                <div class="ranking-block">
+                  <h3>Parques mais ocupados</h3>
+                  <p class="panel-caption">Top 5 na seleção atual</p>
+                  <div id="rankingList" class="ranking-list" aria-live="polite"></div>
+                </div>
+                <div class="favorites-block">
+                  <h3>Os meus favoritos</h3>
+                  <p class="favorites-hint">Guardados apenas neste browser.</p>
+                  <div id="favoritesList" class="favorites-list" aria-live="polite"></div>
+                </div>
+              </section>
             </div>
-            <div class="chart-wrap">
-              <svg id="monthlyChart" viewBox="0 0 980 300" role="img" aria-label="Gráfico de evolução mensal da ocupação"></svg>
-            </div>
-            <p id="chartHint" class="chart-hint" hidden>Selecione um parque no mapa ou no ranking para comparar a sua evolução com a média da cidade.</p>
           </section>
         </main>
 

@@ -65,6 +65,28 @@ const PARKS = [
   { id: 45, name: 'Sé', zoneId: 'santa-maria-maior', capacity: 175, occupancy: 40, maximum: 66, x: 660, y: 395 },
 ];
 
+const FAVORITES_STORAGE_KEY = 'parkview:favorites:v1';
+
+function readFavoriteParkIds() {
+  try {
+    const storedFavorites = window.localStorage.getItem(FAVORITES_STORAGE_KEY);
+    if (!storedFavorites) return { ids: new Set(), error: '' };
+
+    const parsedFavorites = JSON.parse(storedFavorites);
+    if (!Array.isArray(parsedFavorites)) {
+      throw new TypeError('Os favoritos guardados não têm o formato esperado.');
+    }
+
+    const favoriteIds = parsedFavorites.filter((id) => PARKS.some((park) => park.id === id));
+    return { ids: new Set(favoriteIds), error: '' };
+  } catch (error) {
+    console.error('Não foi possível carregar os parques favoritos.', error);
+    return { ids: new Set(), error: 'Não foi possível carregar os favoritos guardados neste browser.' };
+  }
+}
+
+const storedFavorites = readFavoriteParkIds();
+
 const state = {
   zoneFilter: 'all',
   monthFilter: 'all',
@@ -72,6 +94,8 @@ const state = {
   selectedParkId: null,
   selectedZoneId: 'all',
   mapZoom: 1,
+  favoriteParkIds: storedFavorites.ids,
+  favoriteStorageError: storedFavorites.error,
 };
 
 const numberFormatter = new Intl.NumberFormat('pt-PT');
@@ -427,11 +451,15 @@ function renderParkDetail() {
 
   const occupancy = getEffectiveOccupancy(selectedPark, state.monthFilter);
   const pressureClass = getParkPressureClass(occupancy);
+  const isFavorite = state.favoriteParkIds.has(selectedPark.id);
 
   parkDetail.innerHTML = `
     <div class="detail-header">
       <h4>${selectedPark.name}</h4>
-      <span class="pressure-pill ${pressureClass}">${pressureClass === 'low' ? 'Baixa' : pressureClass === 'medium' ? 'Média' : 'Alta'}</span>
+      <div class="detail-actions">
+        <button type="button" class="favorite-toggle ${isFavorite ? 'is-favorite' : ''}" data-park-id="${selectedPark.id}" aria-pressed="${isFavorite}" aria-label="${isFavorite ? 'Remover' : 'Adicionar'} ${selectedPark.name} ${isFavorite ? 'dos' : 'aos'} favoritos">${isFavorite ? '★' : '☆'}</button>
+        <span class="pressure-pill ${pressureClass}">${pressureClass === 'low' ? 'Baixa' : pressureClass === 'medium' ? 'Média' : 'Alta'}</span>
+      </div>
     </div>
     <div class="detail-grid">
       <div class="detail-item"><span>Freguesia</span><strong>${ZONE_META[selectedPark.zoneId].label}</strong></div>
@@ -440,12 +468,78 @@ function renderParkDetail() {
       <div class="detail-item"><span>Taxa máxima</span><strong>${selectedPark.maximum}%</strong></div>
     </div>
   `;
+
+  parkDetail.querySelector('.favorite-toggle').addEventListener('click', () => {
+    toggleFavorite(selectedPark.id);
+  });
+}
+
+function renderFavorites() {
+  const favoritesList = document.getElementById('favoritesList');
+  const favoriteParks = PARKS.filter((park) => state.favoriteParkIds.has(park.id));
+
+  if (state.favoriteStorageError) {
+    favoritesList.innerHTML = `<p class="favorites-message" role="status">${state.favoriteStorageError}</p>`;
+    return;
+  }
+
+  if (!favoriteParks.length) {
+    favoritesList.innerHTML = '<p class="favorites-message">Ainda não guardaste parques. Seleciona um no mapa e carrega na estrela.</p>';
+    return;
+  }
+
+  favoritesList.innerHTML = favoriteParks.map((park) => `
+    <div class="favorite-row">
+      <button type="button" class="favorite-select" data-park-id="${park.id}" aria-label="Ver ${park.name}">
+        <span class="favorite-name">${park.name}</span>
+        <span class="favorite-zone">${ZONE_META[park.zoneId].label}</span>
+      </button>
+      <button type="button" class="favorite-toggle is-favorite" data-park-id="${park.id}" aria-pressed="true" aria-label="Remover ${park.name} dos favoritos">★</button>
+    </div>
+  `).join('');
+
+  favoritesList.querySelectorAll('.favorite-select').forEach((button) => {
+    button.addEventListener('click', () => {
+      const parkId = Number(button.getAttribute('data-park-id'));
+      const park = PARKS.find((item) => item.id === parkId);
+      state.selectedParkId = parkId;
+      state.selectedZoneId = park.zoneId;
+      state.zoneFilter = park.zoneId;
+      state.parkFilter = 'all';
+      updateDashboard();
+    });
+  });
+
+  favoritesList.querySelectorAll('.favorite-toggle').forEach((button) => {
+    button.addEventListener('click', () => {
+      toggleFavorite(Number(button.getAttribute('data-park-id')));
+    });
+  });
+}
+
+function toggleFavorite(parkId) {
+  const nextFavoriteIds = new Set(state.favoriteParkIds);
+  if (nextFavoriteIds.has(parkId)) {
+    nextFavoriteIds.delete(parkId);
+  } else {
+    nextFavoriteIds.add(parkId);
+  }
+
+  try {
+    window.localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify([...nextFavoriteIds]));
+    state.favoriteParkIds = nextFavoriteIds;
+    state.favoriteStorageError = '';
+  } catch (error) {
+    console.error('Não foi possível guardar os parques favoritos.', error);
+    state.favoriteStorageError = 'Não foi possível guardar os favoritos neste browser. Verifica as definições de armazenamento.';
+  }
+
+  updateDashboard();
 }
 
 function renderZoneChart() {
   const container = document.getElementById('zoneChart');
   const zoneEntries = Object.entries(ZONE_META);
-  const maxCapacity = Math.max(...zoneEntries.map(([zoneId]) => getZoneParks(zoneId).reduce((sum, park) => sum + park.capacity, 0)), 1);
 
   const rows = zoneEntries.map(([zoneId, meta]) => {
     const zoneParks = getZoneParks(zoneId);
@@ -461,18 +555,10 @@ function renderZoneChart() {
           <strong>${meta.label}</strong>
           <span class="percent-label ${pressureClass}">${Math.round(occupancyRate)}%</span>
         </div>
-        <div class="zone-bar-stack">
-          <div class="bar-track">
-            <span class="bar-fill capacity" style="width:${(totalCapacity / maxCapacity) * 100}%"></span>
-          </div>
-          <div class="bar-track">
-            <span class="bar-fill occupied" style="width:${(occupiedPlaces / maxCapacity) * 100}%"></span>
-          </div>
-          <div class="bar-values">
-            <span>${numberFormatter.format(totalCapacity)} lugares</span>
-            <span>${numberFormatter.format(occupiedPlaces)} ocupados</span>
-          </div>
+        <div class="zone-meter" role="img" aria-label="${Math.round(occupancyRate)}% de ocupação">
+          <span class="zone-meter-fill ${pressureClass}" style="width:${occupancyRate}%"></span>
         </div>
+        <span class="zone-caption">${numberFormatter.format(occupiedPlaces)} de ${numberFormatter.format(totalCapacity)} lugares ocupados</span>
       </button>
     `;
   }).join('');
@@ -511,11 +597,17 @@ function renderRanking() {
 
   rankingList.innerHTML = parks.map((park, index) => {
     const selected = Number(state.selectedParkId) === park.id;
+    const occupancy = Math.round(getEffectiveOccupancy(park, state.monthFilter));
     return `
-      <button type="button" class="ranking-row ${selected ? 'is-selected' : ''}" data-park-id="${park.id}" aria-label="Selecionar parque ${park.name}">
-        <span class="ranking-rank">${index + 1}</span>
-        <span class="ranking-label">${park.name}</span>
-        <span class="ranking-value">${Math.round(getEffectiveOccupancy(park, state.monthFilter))}%</span>
+      <button type="button" class="ranking-row ${selected ? 'is-selected' : ''}" data-park-id="${park.id}" aria-label="Selecionar parque ${park.name}, ${occupancy}% de ocupação">
+        <span class="ranking-rank">${String(index + 1).padStart(2, '0')}</span>
+        <span class="ranking-content">
+          <span class="ranking-row-top">
+            <span class="ranking-label">${park.name}</span>
+            <span class="ranking-value">${occupancy}%</span>
+          </span>
+          <span class="ranking-meter"><span style="width:${occupancy}%"></span></span>
+        </span>
       </button>
     `;
   }).join('');
@@ -546,88 +638,75 @@ function getSelectedParkSeries() {
 
 function renderMonthlyChart() {
   const svg = document.getElementById('monthlyChart');
+  const legend = document.getElementById('monthlyLegend');
   const width = 980;
   const height = 300;
-  const padding = { top: 18, right: 20, bottom: 40, left: 42 };
+  const padding = { top: 18, right: 20, bottom: 42, left: 48 };
   const chartWidth = width - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
 
   const selectedParkSeries = getSelectedParkSeries();
+  const selectedPark = getSelectedPark();
   const chartHint = document.getElementById('chartHint');
   if (chartHint) chartHint.hidden = Boolean(selectedParkSeries);
-  const citySeries = MONTHS.map((item, index) => ({ month: item.label, value: CITY_MONTH_SERIES[index] }));
-
   const maxValue = 100;
-
-  const xStep = chartWidth / (citySeries.length - 1);
+  legend.innerHTML = `
+    <span class="chart-legend-item"><i class="chart-legend-dot city"></i>Média de Lisboa</span>
+    ${selectedPark ? `<span class="chart-legend-item"><i class="chart-legend-dot selected"></i>${selectedPark.name}</span>` : ''}
+  `;
+  const citySeries = MONTHS.map((item, index) => ({ month: item.label, value: CITY_MONTH_SERIES[index] }));
+  const groupWidth = chartWidth / citySeries.length;
+  const barWidth = selectedParkSeries ? 24 : 38;
   const yScale = (value) => padding.top + chartHeight - (value / maxValue) * chartHeight;
-
-  const cityPoints = citySeries.map((point, index) => `${padding.left + index * xStep},${yScale(point.value)}`).join(' ');
-
-  let selectedPoints = '';
-  if (selectedParkSeries) {
-    selectedPoints = selectedParkSeries.map((point, index) => `${padding.left + index * xStep},${yScale(point.value)}`).join(' ');
-  }
-
+  const baseline = height - padding.bottom;
   const yGrid = [0, 25, 50, 75, 100].map((tick) => {
     const y = yScale(tick);
     return `
       <line class="grid-line" x1="${padding.left}" x2="${width - padding.right}" y1="${y}" y2="${y}"></line>
-      <text class="axis-label" x="8" y="${y + 4}">${tick}%</text>
+      <text class="axis-label" x="${padding.left - 10}" y="${y + 4}" text-anchor="end">${tick}%</text>
     `;
   }).join('');
-
-  const xLabels = citySeries.map((point, index) => `
-    <text class="axis-label" x="${padding.left + index * xStep}" y="${height - 12}" text-anchor="middle">${point.month}</text>
-  `).join('');
-
-  const cityDots = citySeries.map((point, index) => {
-    const x = padding.left + index * xStep;
-    const y = yScale(point.value);
+  const bars = citySeries.map((point, index) => {
+    const center = padding.left + (index + 0.5) * groupWidth;
+    const cityX = center - (selectedParkSeries ? barWidth + 4 : barWidth / 2);
+    const cityY = yScale(point.value);
+    const cityBar = `
+      <rect class="chart-bar city-bar" x="${cityX}" y="${cityY}" width="${barWidth}" height="${baseline - cityY}" rx="6" data-tooltip="${point.month}<br>Média de Lisboa: ${point.value}%">
+        <title>${point.month}: média de Lisboa ${point.value}%</title>
+      </rect>
+    `;
+    const parkValue = selectedParkSeries ? selectedParkSeries[index].value : null;
+    const parkY = parkValue === null ? 0 : yScale(parkValue);
+    const parkBar = parkValue === null ? '' : `
+      <rect class="chart-bar selected-bar" x="${center + 4}" y="${parkY}" width="${barWidth}" height="${baseline - parkY}" rx="6" data-tooltip="${point.month}<br>${selectedPark.name}: ${parkValue}%">
+        <title>${point.month}: ${selectedPark.name} ${parkValue}%</title>
+      </rect>
+    `;
     return `
-      <g class="chart-dot city-dot" data-tooltip="${point.month}<br>Média da cidade: ${point.value}%" data-point-type="city" transform="translate(${x},${y})">
-        <title>${point.month}: ${point.value}%</title>
-        <circle class="city-point" r="4.5"></circle>
-      </g>
+      ${cityBar}
+      ${parkBar}
+      <text class="axis-label month-label" x="${center}" y="${height - 12}" text-anchor="middle">${point.month}</text>
     `;
   }).join('');
-
-  const selectedDots = selectedParkSeries ? selectedParkSeries.map((point, index) => {
-    const x = padding.left + index * xStep;
-    const y = yScale(point.value);
-    return `
-      <g class="chart-dot selected-dot" data-tooltip="${point.month}<br>Média da cidade: ${CITY_MONTH_SERIES[index]}%<br>Parque: ${point.value}%" data-point-type="selected" transform="translate(${x},${y})">
-        <title>${point.month}: cidade ${CITY_MONTH_SERIES[index]}% · parque ${point.value}%</title>
-        <circle class="selected-point" r="4.2"></circle>
-      </g>
-    `;
-  }).join('') : '';
-
-  const selectedLine = selectedParkSeries
-    ? `<polyline class="selected-line" points="${selectedPoints}"></polyline>${selectedDots}`
-    : '';
 
   svg.innerHTML = `
     <g>
       ${yGrid}
-      <line class="axis-line" x1="${padding.left}" x2="${width - padding.right}" y1="${height - padding.bottom}" y2="${height - padding.bottom}"></line>
-      <polyline class="city-line" points="${cityPoints}"></polyline>
-      ${cityDots}
-      ${selectedLine}
-      ${xLabels}
+      <line class="axis-line" x1="${padding.left}" x2="${width - padding.right}" y1="${baseline}" y2="${baseline}"></line>
+      ${bars}
     </g>
   `;
 
-  svg.querySelectorAll('.chart-dot').forEach((dot) => {
-    dot.addEventListener('mouseenter', (event) => {
-      const tooltipText = dot.getAttribute('data-tooltip');
+  svg.querySelectorAll('.chart-bar').forEach((bar) => {
+    bar.addEventListener('mouseenter', (event) => {
+      const tooltipText = bar.getAttribute('data-tooltip');
       showTooltip(event, tooltipText);
     });
-    dot.addEventListener('mousemove', (event) => {
-      const tooltipText = dot.getAttribute('data-tooltip');
+    bar.addEventListener('mousemove', (event) => {
+      const tooltipText = bar.getAttribute('data-tooltip');
       showTooltip(event, tooltipText);
     });
-    dot.addEventListener('mouseleave', hideTooltip);
+    bar.addEventListener('mouseleave', hideTooltip);
   });
 }
 
@@ -671,6 +750,7 @@ function updateDashboard() {
   renderMap();
   renderMapSummary();
   renderParkDetail();
+  renderFavorites();
   renderZoneChart();
   renderRanking();
   renderMonthlyChart();

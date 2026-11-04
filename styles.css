@@ -95,9 +95,9 @@ select:focus-visible,
 }
 
 .brand-icon text {
-  fill: #fff;
+  fill: #f8f6f0;
   font-family: "DM Sans", "Segoe UI", sans-serif;
-  font-size: 70px;
+  font-size: 230px;
   font-weight: 700;
   text-anchor: middle;
 }

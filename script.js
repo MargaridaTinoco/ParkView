@@ -98,7 +98,248 @@ const state = {
   favoriteStorageError: storedFavorites.error,
 };
 
+const parkInfoState = {
+  parkId: null,
+  requestId: 0,
+  status: 'idle',
+  data: null,
+};
+
 const numberFormatter = new Intl.NumberFormat('pt-PT');
+const currencyFormatter = new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' });
+
+const parkInfoFields = {
+  places: [
+    { key: 'total_spaces', label: 'Lugares totais', format: 'number' },
+    { key: 'reduced_mobility_spaces', label: 'Mobilidade reduzida', format: 'number' },
+    { key: 'electric_charging_spaces', label: 'Carregamento elétrico', format: 'number' },
+  ],
+  schedules: [
+    { key: 'service_hours', label: 'Horário de serviço', format: 'text' },
+    { key: 'customer_service_hours', label: 'Horário do serviço ao cliente', format: 'text' },
+  ],
+  prices: [
+    { key: 'first_hour_price', label: 'Primeira hora', format: 'currency' },
+    { key: 'daily_max_price', label: 'Máximo diário', format: 'currency' },
+  ],
+  products: [
+    { key: 'subscriptions', label: 'Avenças', icon: 'pass' },
+    { key: 'electric_charging', label: 'Carregamento elétrico', icon: 'bolt' },
+    { key: 'express_entry', label: 'Entrada express', icon: 'arrow' },
+    { key: 'multipass', label: 'Multipass', icon: 'grid' },
+    { key: 'reservations', label: 'Reservas', icon: 'calendar' },
+  ],
+  services: [
+    { key: 'support_24h', label: 'Apoio 24 horas', icon: 'clock' },
+    { key: 'automatic_payment_machine', label: 'Caixa de pagamento automático', icon: 'terminal' },
+    { key: 'cctv', label: 'CCTV', icon: 'camera' },
+    { key: 'elevator', label: 'Elevador', icon: 'elevator' },
+    { key: 'car_wash', label: 'Lavagem de veículos', icon: 'wash' },
+  ],
+  payments: [
+    { key: 'app_payment', label: 'Aplicação', icon: 'phone' },
+    { key: 'credit_card_payment', label: 'Cartão de crédito', icon: 'card' },
+    { key: 'cash_payment', label: 'Numerário', icon: 'cash' },
+    { key: 'via_verde_payment', label: 'Via Verde', icon: 'toll' },
+  ],
+  vehicles: [
+    { key: 'cars_allowed', label: 'Carro', icon: 'car' },
+    { key: 'vans_allowed', label: 'Furgão', icon: 'van' },
+    { key: 'motorcycles_allowed', label: 'Motocicleta', icon: 'motorcycle' },
+  ],
+  height: { key: 'max_height_cm', label: 'Altura máxima', icon: 'ruler', format: 'height' },
+};
+
+const parkInfoIconPaths = {
+  pass: '<path d="M4 5h16v4a2 2 0 0 0 0 4v4H4v-4a2 2 0 0 0 0-4z"/><path d="M12 7v2m0 2v2m0 2v2"/>',
+  bolt: '<path d="m13 2-3 8h6l-5 12 2-9H7z"/>',
+  arrow: '<path d="M4 12h15m-6-6 6 6-6 6"/>',
+  grid: '<rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/>',
+  calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  terminal: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h3m-3 6h8"/>',
+  camera: '<path d="M4 7h3l2-3h6l2 3h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z"/><circle cx="12" cy="13" r="3"/>',
+  elevator: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="m9 8 2-2 2 2m-4 8 2 2 2-2m2-7v6"/>',
+  wash: '<path d="M3 15h18l-2-6H5zM5 15l-1 4h16l-1-4"/><circle cx="8" cy="18" r="1"/><circle cx="16" cy="18" r="1"/><path d="M8 5v2m4-3v3m4-2v2"/>',
+  phone: '<rect x="6" y="2" width="12" height="20" rx="2"/><path d="M10 18h4"/>',
+  card: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18m-14 5h4"/>',
+  cash: '<rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 9h.01M18 15h.01"/>',
+  toll: '<path d="M3 19h18M5 19V9h14v10M8 9V5h8v4"/><path d="m10 3 2-2 2 2"/>',
+  car: '<path d="m5 11 2-5h10l2 5 2 2v5h-2v-2H5v2H3v-5z"/><circle cx="7" cy="14" r="1"/><circle cx="17" cy="14" r="1"/>',
+  van: '<path d="M3 7h11v10H3zM14 10h4l3 3v4h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/>',
+  motorcycle: '<circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="m6 17 4-7h4l4 7m-6-7-2-3h4m-2 3 4 2"/>',
+  ruler: '<path d="M4 20 20 4l-3-3L1 17zM7 17l-2-2m5-1-2-2m5-1-2-2m5-1-2-2"/>',
+};
+
+function getParkInfo(parkId) {
+  // TODO: Ligar este endpoint ao serviço backend que consulta a tabela park_info na base de dados.
+  return fetch(`/api/parks/${encodeURIComponent(parkId)}/info`, {
+    headers: { Accept: 'application/json' },
+  }).then((response) => {
+    if (!response.ok) {
+      throw new Error(`Pedido de informação do parque falhou (${response.status}).`);
+    }
+
+    return response.json();
+  }).then((data) => {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+      throw new TypeError('A resposta da informação do parque tem um formato inválido.');
+    }
+    return data;
+  });
+}
+
+function hasParkInfoValue(value) {
+  return value !== null && value !== undefined && value !== '';
+}
+
+function escapeParkInfoHtml(value) {
+  return String(value).replace(/[&<>"']/g, (character) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  })[character]);
+}
+
+function formatParkInfoValue(value, format) {
+  if (typeof value === 'boolean') return value ? 'Sim' : 'Não';
+  if (format === 'currency' && Number.isFinite(Number(value))) return currencyFormatter.format(Number(value));
+  if (format === 'number' && Number.isFinite(Number(value))) return numberFormatter.format(Number(value));
+  if (format === 'height' && Number.isFinite(Number(value))) return `${numberFormatter.format(Number(value))} cm`;
+  return escapeParkInfoHtml(value);
+}
+
+function renderParkInfoTable(title, fields, data) {
+  const rows = fields.filter(({ key }) => hasParkInfoValue(data[key]));
+  if (!rows.length) return '';
+
+  return `
+    <section class="park-info-section">
+      <h5>${title}</h5>
+      <table class="park-info-table">
+        <tbody>
+          ${rows.map(({ key, label, format }) => `
+            <tr><th scope="row">${label}</th><td>${formatParkInfoValue(data[key], format)}</td></tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </section>
+  `;
+}
+
+function renderParkInfoGroup(title, fields, data) {
+  const items = fields.filter(({ key }) => hasParkInfoValue(data[key]));
+  if (!items.length) return '';
+
+  return `
+    <section class="park-info-section">
+      <h5>${title}</h5>
+      <ul class="park-info-list">
+        ${items.map(({ key, label, icon }) => `
+          <li class="park-info-item">
+            <svg class="park-info-icon" viewBox="0 0 24 24" aria-hidden="true">${parkInfoIconPaths[icon]}</svg>
+            <span class="park-info-label">${label}</span>
+            <strong>${formatParkInfoValue(data[key], 'boolean')}</strong>
+          </li>
+        `).join('')}
+      </ul>
+    </section>
+  `;
+}
+
+function renderParkInfoContent(container, selectedPark) {
+  if (parkInfoState.status === 'loading') {
+    container.setAttribute('aria-busy', 'true');
+    container.innerHTML = '<p class="park-info-message" role="status">A carregar informação do parque…</p>';
+    return;
+  }
+
+  if (parkInfoState.status === 'error') {
+    container.setAttribute('aria-busy', 'false');
+    container.innerHTML = '<p class="park-info-message" role="status">Informação indisponível. Tenta novamente mais tarde.</p>';
+    return;
+  }
+
+  const data = parkInfoState.data || {};
+  const allFields = [
+    ...parkInfoFields.places,
+    ...parkInfoFields.schedules,
+    ...parkInfoFields.prices,
+    ...parkInfoFields.products,
+    ...parkInfoFields.services,
+    ...parkInfoFields.payments,
+    ...parkInfoFields.vehicles,
+    parkInfoFields.height,
+  ];
+  if (!allFields.some(({ key }) => hasParkInfoValue(data[key]))) {
+    container.setAttribute('aria-busy', 'false');
+    container.innerHTML = `
+      <div class="park-info-heading"><h4>Informação do parque</h4><p>${escapeParkInfoHtml(selectedPark.name)}</p></div>
+      <p class="park-info-message">Não existe informação disponível para este parque.</p>
+    `;
+    return;
+  }
+
+  container.setAttribute('aria-busy', 'false');
+  container.innerHTML = `
+    <div class="park-info-heading"><h4>Informação do parque</h4><p>${escapeParkInfoHtml(selectedPark.name)}</p></div>
+    <div class="park-info-grid">
+      <div class="park-info-column">
+        ${renderParkInfoTable('Horários', parkInfoFields.schedules, data)}
+        ${renderParkInfoTable('Preços gerais', parkInfoFields.prices, data)}
+        ${renderParkInfoTable('Lugares', parkInfoFields.places, data)}
+      </div>
+      <div class="park-info-column">
+        ${renderParkInfoGroup('Produtos', parkInfoFields.products, data)}
+        ${renderParkInfoGroup('Serviços', parkInfoFields.services, data)}
+        ${renderParkInfoGroup('Forma de pagamento', parkInfoFields.payments, data)}
+        ${renderParkInfoGroup('Veículos aptos', parkInfoFields.vehicles, data)}
+        ${renderParkInfoGroup('Altura máxima', [parkInfoFields.height], data)}
+      </div>
+    </div>
+  `;
+}
+
+function renderParkInfo() {
+  const container = document.getElementById('parkInfo');
+  const selectedPark = getSelectedPark();
+  if (!selectedPark) {
+    parkInfoState.requestId += 1;
+    parkInfoState.parkId = null;
+    parkInfoState.status = 'idle';
+    parkInfoState.data = null;
+    container.hidden = true;
+    container.setAttribute('aria-busy', 'false');
+    container.innerHTML = '';
+    return;
+  }
+
+  container.hidden = false;
+  if (parkInfoState.parkId !== selectedPark.id) {
+    const requestId = parkInfoState.requestId + 1;
+    parkInfoState.parkId = selectedPark.id;
+    parkInfoState.requestId = requestId;
+    parkInfoState.status = 'loading';
+    parkInfoState.data = null;
+    renderParkInfoContent(container, selectedPark);
+
+    getParkInfo(selectedPark.id).then((data) => {
+      if (parkInfoState.requestId !== requestId || parkInfoState.parkId !== selectedPark.id) return;
+      parkInfoState.status = 'loaded';
+      parkInfoState.data = data;
+      renderParkInfoContent(container, selectedPark);
+    }).catch(() => {
+      if (parkInfoState.requestId !== requestId || parkInfoState.parkId !== selectedPark.id) return;
+      parkInfoState.status = 'error';
+      renderParkInfoContent(container, selectedPark);
+    });
+    return;
+  }
+
+  renderParkInfoContent(container, selectedPark);
+}
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
@@ -750,6 +991,7 @@ function updateDashboard() {
   renderMap();
   renderMapSummary();
   renderParkDetail();
+  renderParkInfo();
   renderFavorites();
   renderZoneChart();
   renderRanking();

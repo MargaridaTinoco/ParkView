@@ -73,39 +73,47 @@ select:focus-visible,
 .brand-wrap {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 10px;
 }
 
 .brand-icon {
-  width: 52px;
-  height: 52px;
-  background: var(--primary);
-  border-radius: 14px;
+  width: 76px;
+  height: 76px;
+  flex: 0 0 auto;
   display: grid;
   place-items: center;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.18);
 }
 
 .brand-icon svg {
-  width: 26px;
-  height: 26px;
-  stroke: #fff;
-  fill: none;
-  stroke-width: 1.7;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
-.brand-icon svg rect {
-  fill: var(--primary);
-  stroke: rgba(255,255,255,0.45);
+.brand-icon .brand-mark {
+  fill: #1e604e;
+}
+
+.brand-icon text {
+  fill: #fff;
+  font-family: "DM Sans", "Segoe UI", sans-serif;
+  font-size: 70px;
+  font-weight: 700;
+  text-anchor: middle;
+}
+
+.brand-icon .brand-swoosh {
+  fill: #d76547;
 }
 
 .brand-copy h1 {
   margin: 0;
-  font-size: clamp(1.5rem, 2vw, 2.3rem);
-  line-height: 1.15;
-  letter-spacing: -0.04em;
+  color: #1e604e;
+  font-family: "DM Sans", "Segoe UI", sans-serif;
+  font-size: clamp(2rem, 3.2vw, 2.8rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.045em;
 }
 
 .brand-copy p {
@@ -1312,33 +1320,18 @@ body {
 }
 
 .brand-wrap {
-  gap: 12px;
+  gap: 10px;
   color: var(--text);
   text-decoration: none;
 }
 
 .brand-icon {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background: #1e604e;
-  box-shadow: none;
-}
-
-.brand-icon svg {
-  width: 22px;
-  height: 22px;
-}
-
-.brand-icon svg rect {
-  fill: #1e604e;
+  width: 76px;
+  height: 76px;
 }
 
 .brand-copy h1 {
-  font-family: "Fraunces", Georgia, serif;
-  font-size: 1.35rem;
   line-height: 1;
-  letter-spacing: 0;
 }
 
 .brand-copy h1 span {
@@ -1373,11 +1366,6 @@ body {
   height: 2px;
   background: #d76547;
   content: "";
-}
-
-.nav-link span {
-  margin-left: 4px;
-  color: #d76547;
 }
 
 .home-view {

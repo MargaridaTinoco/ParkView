@@ -93,10 +93,14 @@ const state = {
   parkFilter: 'all',
   selectedParkId: null,
   selectedZoneId: 'all',
-  mapZoom: 1,
   favoriteParkIds: storedFavorites.ids,
   favoriteStorageError: storedFavorites.error,
 };
+
+let parkMap = null;
+let parkMarkersLayer = null;
+let parkLocations = new Map();
+let lastMappedParkId = null;
 
 const parkInfoState = {
   parkId: null,
@@ -512,146 +516,122 @@ function renderKpis() {
   }).join('');
 }
 
-function getPressureColor(value) {
-  if (value < 50) return '#22a277';
-  if (value < 70) return '#dfa13a';
-  return '#df5a5a';
+async function loadParkLocations() {
+  const response = await fetch('park-locations.geojson', { headers: { Accept: 'application/geo+json, application/json' } });
+  if (!response.ok) {
+    throw new Error(`Não foi possível carregar as localizações provisórias (${response.status}).`);
+  }
+
+  const data = await response.json();
+  if (data.type !== 'FeatureCollection' || !Array.isArray(data.features)) {
+    throw new TypeError('O ficheiro de localizações dos parques não tem um formato GeoJSON válido.');
+  }
+
+  const locations = new Map();
+  data.features.forEach((feature) => {
+    const parkId = Number(feature.properties?.parkId);
+    const coordinates = feature.geometry?.coordinates;
+    if (
+      Number.isInteger(parkId)
+      && feature.geometry?.type === 'Point'
+      && Array.isArray(coordinates)
+      && Number.isFinite(coordinates[0])
+      && Number.isFinite(coordinates[1])
+      && coordinates[0] >= -180
+      && coordinates[0] <= 180
+      && coordinates[1] >= -90
+      && coordinates[1] <= 90
+    ) {
+      locations.set(parkId, { longitude: coordinates[0], latitude: coordinates[1] });
+    }
+  });
+
+  if (!locations.size) {
+    throw new TypeError('O ficheiro de localizações não contém coordenadas válidas.');
+  }
+  if (locations.size !== PARKS.length) {
+    throw new TypeError(`O ficheiro de localizações contém ${locations.size} de ${PARKS.length} parques.`);
+  }
+  parkLocations = locations;
 }
 
-function buildMapSvgContent() {
-  return `
-    <defs>
-      <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
-        <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="rgba(25, 122, 158, 0.22)"/>
-      </filter>
-    </defs>
-    <g id="mapGroup" transform="translate(0 0) scale(${state.mapZoom})" style="transform-origin: center;">
-      <path class="water-shape" d="M0 130 C80 80, 120 70, 180 95 L220 140 L170 215 L50 230 L0 190 Z"></path>
-      <path class="city-shape" d="M60 90 L140 50 L220 60 L310 28 L410 40 L520 76 L660 120 L720 180 L700 300 L650 390 L560 472 L430 490 L300 470 L180 430 L90 350 L40 260 Z"></path>
-      <path class="road-line" d="M80 105 L180 60 L280 95 L360 70 L470 110 L590 140"></path>
-      <path class="road-line" d="M130 220 L270 160 L390 190 L520 210 L680 255"></path>
-      <path class="road-line" d="M230 330 L350 260 L465 300 L624 360"></path>
-      <path class="road-line" d="M120 400 L250 325 L345 390 L430 430 L560 440"></path>
-      <path class="road-line" d="M355 80 L340 190 L325 300 L315 430"></path>
-      <path class="road-line" d="M485 155 L510 255 L530 360"></path>
-      <g>
-        <path class="zone-area ${state.selectedZoneId === 'avenidas-novas' ? 'is-selected' : ''}" data-zone-id="avenidas-novas" fill="${ZONE_META['avenidas-novas'].color}" d="M150 100 L260 70 L330 120 L310 205 L240 220 L170 200 Z"></path>
-        <path class="zone-area ${state.selectedZoneId === 'arroios' ? 'is-selected' : ''}" data-zone-id="arroios" fill="${ZONE_META['arroios'].color}" d="M315 120 L430 110 L500 170 L470 290 L385 310 L300 255 Z"></path>
-        <path class="zone-area ${state.selectedZoneId === 'santo-antonio' ? 'is-selected' : ''}" data-zone-id="santo-antonio" fill="${ZONE_META['santo-antonio'].color}" d="M255 68 L390 40 L440 95 L405 180 L315 165 L260 120 Z"></path>
-        <path class="zone-area ${state.selectedZoneId === 'alvalade' ? 'is-selected' : ''}" data-zone-id="alvalade" fill="${ZONE_META['alvalade'].color}" d="M90 260 L215 220 L245 410 L130 455 L60 365 Z"></path>
-        <path class="zone-area ${state.selectedZoneId === 'santa-maria-maior' ? 'is-selected' : ''}" data-zone-id="santa-maria-maior" fill="${ZONE_META['santa-maria-maior'].color}" d="M470 310 L620 290 L680 330 L670 445 L520 470 L455 390 Z"></path>
-      </g>
-      <text class="zone-label" x="85" y="98">Monsanto</text>
-      <text class="zone-label" x="40" y="170">Rio Tejo</text>
-    </g>
-  `;
+function initializeParkMap() {
+  const notice = document.getElementById('mapNotice');
+  if (!window.L) {
+    notice.textContent = 'Não foi possível carregar o mapa. Verifica a ligação à internet e tenta novamente.';
+    throw new Error('A biblioteca Leaflet não foi carregada.');
+  }
+
+  parkMap = window.L.map('mapCanvas', { scrollWheelZoom: false }).setView([38.735, -9.145], 12);
+  window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  }).addTo(parkMap);
+  window.L.control.scale({ imperial: false }).addTo(parkMap);
+  if (!window.L.markerClusterGroup) {
+    notice.textContent = 'Não foi possível carregar o agrupamento dos pontos do mapa. Verifica a ligação à internet e tenta novamente.';
+    throw new Error('O plugin Leaflet.markercluster não foi carregado.');
+  }
+  parkMarkersLayer = window.L.markerClusterGroup({
+    showCoverageOnHover: false,
+    maxClusterRadius: 35,
+    disableClusteringAtZoom: 17,
+    iconCreateFunction: (cluster) => window.L.divIcon({
+      html: `<span>${cluster.getChildCount()}</span>`,
+      className: 'park-marker-cluster',
+      iconSize: [40, 40],
+    }),
+  }).addTo(parkMap);
 }
 
 function renderMap() {
-  const svg = document.getElementById('mapSvg');
-  const filteredParks = getFilteredParks();
-  const visibleParkIds = new Set(filteredParks.map((park) => park.id));
+  if (!parkMap || !parkMarkersLayer) return;
 
-  svg.innerHTML = buildMapSvgContent();
-
-  const mapGroup = svg.querySelector('#mapGroup');
-  const markersGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-  markersGroup.setAttribute('id', 'parkMarkers');
+  const visibleParkIds = new Set(getFilteredParks().map((park) => park.id));
+  const selectedPark = getSelectedPark();
+  parkMarkersLayer.clearLayers();
 
   PARKS.forEach((park) => {
-    const isVisible = visibleParkIds.has(park.id);
-    const effectiveOccupancy = getEffectiveOccupancy(park, state.monthFilter);
+    const location = parkLocations.get(park.id);
+    if (!location) return;
+
+    const occupancy = getEffectiveOccupancy(park, state.monthFilter);
+    const pressureClass = getParkPressureClass(occupancy);
     const isSelected = Number(state.selectedParkId) === park.id;
-    const isDimmed = state.zoneFilter !== 'all' && !isVisible;
-    const color = getPressureColor(effectiveOccupancy);
-
-    const iconGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    iconGroup.setAttribute('class', `park-marker ${isSelected ? 'is-selected' : ''} ${isDimmed ? 'is-dimmed' : ''}`);
-    iconGroup.setAttribute('tabindex', '0');
-    iconGroup.setAttribute('role', 'button');
-    iconGroup.setAttribute('aria-label', `${park.name}, ${ZONE_META[park.zoneId].label}, ${effectiveOccupancy}% de ocupação`);
-    iconGroup.setAttribute('data-park-id', String(park.id));
-    iconGroup.setAttribute('transform', `translate(${park.x}, ${park.y}) scale(${isSelected ? 1.16 : 1})`);
-    iconGroup.style.opacity = isVisible ? '1' : '0.18';
-
-    const halo = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    halo.setAttribute('class', 'marker-halo');
-    halo.setAttribute('r', isSelected ? '16' : '12');
-    halo.setAttribute('fill', color);
-    halo.setAttribute('opacity', isSelected ? '0.18' : '0.1');
-
-    const core = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    core.setAttribute('class', 'marker-core');
-    core.setAttribute('r', isSelected ? '7' : '5.7');
-    core.setAttribute('fill', color);
-
-    const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    label.setAttribute('class', 'marker-label');
-    label.setAttribute('x', 11);
-    label.setAttribute('y', 3);
-    label.textContent = `${park.name.split(' ')[0]}`;
-
-    const tooltipText = `${park.name}<br>${ZONE_META[park.zoneId].label}<br>Ocupação: ${effectiveOccupancy}%<br>Capacidade: ${numberFormatter.format(park.capacity)}`;
-    iconGroup.setAttribute('data-tooltip', tooltipText);
-
-    iconGroup.addEventListener('click', () => {
+    const isVisible = visibleParkIds.has(park.id);
+    const icon = window.L.divIcon({
+      className: 'park-leaflet-icon',
+      html: `<span class="park-map-marker ${pressureClass} ${isSelected ? 'is-selected' : ''} ${isVisible ? '' : 'is-dimmed'}" aria-hidden="true"><span>P</span></span>`,
+      iconSize: [34, 34],
+      iconAnchor: [17, 17],
+    });
+    const marker = window.L.marker([location.latitude, location.longitude], {
+      icon,
+      keyboard: true,
+      title: `${park.name} — localização aproximada`,
+      alt: `${park.name}, ${ZONE_META[park.zoneId].label}, localização aproximada`,
+    });
+    marker.bindTooltip(
+      `${park.name}<br>${ZONE_META[park.zoneId].label}<br>Ocupação: ${Math.round(occupancy)}%<br>Localização aproximada`,
+    );
+    marker.on('click', () => {
       state.selectedParkId = park.id;
       state.selectedZoneId = park.zoneId;
       updateDashboard();
     });
-
-    iconGroup.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault();
-        state.selectedParkId = park.id;
-        state.selectedZoneId = park.zoneId;
-        updateDashboard();
-      }
-    });
-
-    iconGroup.addEventListener('mouseenter', (event) => {
-      showTooltip(event, tooltipText);
-    });
-    iconGroup.addEventListener('mousemove', (event) => {
-      showTooltip(event, tooltipText);
-    });
-    iconGroup.addEventListener('mouseleave', hideTooltip);
-    iconGroup.addEventListener('focus', (event) => {
-      showTooltip(event, tooltipText);
-    });
-    iconGroup.addEventListener('blur', hideTooltip);
-
-    iconGroup.appendChild(halo);
-    iconGroup.appendChild(core);
-    iconGroup.appendChild(label);
-    markersGroup.appendChild(iconGroup);
+    marker.addTo(parkMarkersLayer);
   });
 
-  mapGroup.appendChild(markersGroup);
-
-  svg.querySelectorAll('.zone-area').forEach((zoneElement) => {
-    zoneElement.addEventListener('click', () => {
-      const zoneId = zoneElement.getAttribute('data-zone-id');
-      state.selectedZoneId = zoneId;
-      state.zoneFilter = zoneId;
-      state.selectedParkId = null;
-      updateDashboard();
-    });
-    zoneElement.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault();
-        const zoneId = zoneElement.getAttribute('data-zone-id');
-        state.selectedZoneId = zoneId;
-        state.zoneFilter = zoneId;
-        state.selectedParkId = null;
-        updateDashboard();
-      }
-    });
-    zoneElement.setAttribute('tabindex', '0');
-  });
-
-  const zoomGroup = svg.querySelector('#mapGroup');
-  zoomGroup.setAttribute('transform', `translate(0 0) scale(${state.mapZoom})`);
+  if (selectedPark && Number(lastMappedParkId) !== selectedPark.id) {
+    const location = parkLocations.get(selectedPark.id);
+    if (location) {
+      parkMap.setView(
+        [location.latitude, location.longitude],
+        Math.max(parkMap.getZoom(), 15),
+      );
+    }
+  }
+  lastMappedParkId = selectedPark ? selectedPark.id : null;
 }
 
 function renderMapSummary() {
@@ -963,11 +943,6 @@ function hideTooltip() {
   document.getElementById('customTooltip').classList.add('hidden');
 }
 
-function adjustMapZoom(delta) {
-  state.mapZoom = clamp(Number((state.mapZoom + delta).toFixed(2)), 0.9, 1.6);
-  renderMap();
-}
-
 function syncSelectedStateFromFilters() {
   const currentPark = state.parkFilter === 'all' ? null : PARKS.find((park) => park.id === Number(state.parkFilter));
   if (currentPark) {
@@ -1039,19 +1014,25 @@ function bindEvents() {
     updateDashboard();
   });
 
-  document.querySelectorAll('.zoom-btn').forEach((button) => {
-    button.addEventListener('click', () => {
-      const action = button.getAttribute('data-action');
-      if (action === 'zoom-in') adjustMapZoom(0.1);
-      if (action === 'zoom-out') adjustMapZoom(-0.1);
-    });
-  });
 }
 
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
   renderHomeSummary();
-  if (document.getElementById('mapSvg')) {
+  if (document.getElementById('mapCanvas')) {
     bindEvents();
+    try {
+      initializeParkMap();
+    } catch (error) {
+      console.error('Não foi possível inicializar o mapa.', error);
+    }
+
+    try {
+      await loadParkLocations();
+    } catch (error) {
+      console.error('Não foi possível carregar as localizações dos parques.', error);
+      document.getElementById('mapNotice').textContent = 'Não foi possível carregar as localizações dos parques. Tenta novamente mais tarde.';
+    }
+
     updateDashboard();
     console.log('Dashboard inicializado; total de parques:', PARKS.length);
   }

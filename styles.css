@@ -38,7 +38,7 @@ select {
 
 button:focus-visible,
 select:focus-visible,
-.park-marker:focus-visible,
+.leaflet-marker-icon:focus-visible,
 .zone-clickable:focus-visible,
 .ranking-row:focus-visible,
 .zone-row:focus-visible {
@@ -389,106 +389,77 @@ select:focus-visible,
   border-radius: 14px;
   background: #f7fafb;
   overflow: hidden;
-  min-height: 470px;
-}
-
-.map-controls {
-  position: absolute;
-  right: 12px;
-  top: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  z-index: 9;
-}
-
-.zoom-btn {
-  width: 36px;
-  height: 36px;
-  border: 1px solid var(--border);
-  background: rgba(255,255,255,0.92);
-  border-radius: 10px;
-  color: var(--text);
-  font-size: 1.5rem;
-  cursor: pointer;
-}
-
-#mapSvg {
-  display: block;
-  width: 100%;
   height: 470px;
 }
 
-.city-shape {
-  fill: #f0f5f7;
-  stroke: #bfd3d9;
-  stroke-width: 1.2;
+.leaflet-map {
+  width: 100%;
+  height: 100%;
 }
 
-.water-shape {
-  fill: var(--river);
-  opacity: 0.9;
+.map-notice {
+  margin: 8px 2px 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.45;
 }
 
-.road-line {
-  stroke: rgba(255,255,255,0.9);
-  stroke-width: 2.5;
-  fill: none;
-  stroke-linecap: round;
+.park-leaflet-icon {
+  border: 0;
+  background: transparent;
 }
 
-.zone-area {
-  stroke: rgba(25, 122, 158, 0.18);
-  stroke-width: 1.2;
-  cursor: pointer;
-  transition: opacity 0.2s ease, stroke 0.2s ease, filter 0.2s ease;
+.park-map-marker {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 2px solid #fff;
+  border-radius: 50% 50% 50% 8px;
+  background: var(--primary);
+  box-shadow: 0 2px 8px rgba(24, 60, 53, 0.3);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  transform: rotate(-45deg);
+  transition: box-shadow 160ms ease, opacity 160ms ease, scale 160ms ease;
 }
 
-.zone-area.is-selected {
-  stroke: var(--primary);
-  stroke-width: 2;
-  filter: drop-shadow(0 4px 10px rgba(25, 122, 158, 0.18));
+.park-map-marker > span {
+  display: block;
+  transform: rotate(45deg);
 }
 
-.zone-label {
-  fill: var(--muted);
-  font-size: 12px;
-  font-weight: 600;
-  opacity: 0.8;
-  pointer-events: none;
+.park-map-marker.low { background: var(--low); }
+.park-map-marker.medium { background: var(--medium); }
+.park-map-marker.high { background: var(--high); }
+
+.park-map-marker.is-selected {
+  box-shadow: 0 0 0 5px rgba(30, 96, 78, 0.2), 0 3px 10px rgba(24, 60, 53, 0.35);
+  scale: 1.15;
 }
 
-.park-marker {
-  cursor: pointer;
-  transition: transform 0.2s ease, opacity 0.2s ease;
+.park-map-marker.is-dimmed {
+  opacity: 0.22;
 }
 
-.park-marker.is-selected {
-  filter: drop-shadow(0 0 0 rgba(0,0,0,0));
+.park-marker-cluster {
+  border: 0;
+  background: transparent;
 }
 
-.park-marker circle.marker-core {
-  stroke: rgba(255,255,255,0.9);
-  stroke-width: 2;
-}
-
-.park-marker circle.marker-halo {
-  fill: rgba(25, 122, 158, 0.12);
-}
-
-.park-marker .marker-label {
-  font-size: 11px;
-  fill: var(--muted);
-  user-select: none;
-  pointer-events: none;
-}
-
-.park-marker.is-dimmed {
-  opacity: 0.2;
-}
-
-.park-marker.is-selected .marker-core {
-  stroke-width: 3;
+.park-marker-cluster span {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: var(--primary);
+  box-shadow: 0 2px 8px rgba(24, 60, 53, 0.3);
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 700;
 }
 
 .park-detail {
@@ -2072,12 +2043,8 @@ body {
     grid-template-columns: 1fr;
   }
 
-  .dashboard-view #mapSvg {
-    height: 380px;
-  }
-
   .dashboard-view .map-wrap {
-    min-height: 380px;
+    height: 380px;
   }
 
   .dashboard-view .timeline-panel .panel-header {

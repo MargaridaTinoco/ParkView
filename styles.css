@@ -1441,10 +1441,71 @@ body {
   width: 100%;
   max-width: 480px;
   margin-left: auto;
-  overflow: hidden;
-  background: #fbfcf8;
+  perspective: 1200px;
   box-shadow: 14px 16px 0 #e5e9df;
   animation: card-arrive 600ms 100ms ease both;
+}
+
+.city-card-inner {
+  display: grid;
+  transform-style: preserve-3d;
+  transition: transform 760ms cubic-bezier(0.2, 0.72, 0.2, 1);
+}
+
+.city-card.is-flipped .city-card-inner {
+  transform: rotateY(180deg);
+}
+
+.city-card-face {
+  grid-area: 1 / 1;
+  min-width: 0;
+  overflow: hidden;
+  backface-visibility: hidden;
+  background: #fbfcf8;
+}
+
+.city-card-back {
+  transform: rotateY(180deg);
+}
+
+.city-card-toggle {
+  position: absolute;
+  top: 57px;
+  right: 12px;
+  z-index: 2;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid rgba(24, 60, 53, 0.14);
+  border-radius: 999px;
+  background: rgba(251, 252, 248, 0.94);
+  color: #1e604e;
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(24, 60, 53, 0.12);
+}
+
+.city-card-toggle span span {
+  margin-left: 3px;
+  color: #d76547;
+  font-size: 0.9rem;
+}
+
+.city-card-toggle-back {
+  display: none;
+}
+
+.city-card.is-flipped .city-card-toggle-front {
+  display: none;
+}
+
+.city-card.is-flipped .city-card-toggle-back {
+  display: inline;
+}
+
+.city-card-toggle:focus-visible {
+  outline: 3px solid rgba(30, 96, 78, 0.35);
+  outline-offset: 3px;
 }
 
 .city-card-topline {
@@ -1482,6 +1543,72 @@ body {
   background-color: #e9eee5;
   background-image: linear-gradient(29deg, transparent 47%, rgba(255,255,255,.8) 48%, rgba(255,255,255,.8) 50%, transparent 51%), linear-gradient(119deg, transparent 44%, rgba(255,255,255,.85) 45%, rgba(255,255,255,.85) 47%, transparent 48%), linear-gradient(5deg, transparent 61%, rgba(255,255,255,.8) 62%, rgba(255,255,255,.8) 64%, transparent 65%);
   background-size: 190px 150px, 220px 180px, 180px 120px;
+}
+
+.city-back-art {
+  position: relative;
+  height: 275px;
+  overflow: hidden;
+  background: #e9eee5;
+}
+
+.city-back-art svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.back-art-park {
+  fill: rgba(30, 96, 78, 0.12);
+}
+
+.back-art-park.park-b {
+  fill: rgba(215, 101, 71, 0.14);
+}
+
+.back-art-river {
+  fill: #bfd9d2;
+}
+
+.back-art-road {
+  fill: none;
+  stroke: #fffdf7;
+  stroke-linecap: round;
+  stroke-width: 17;
+}
+
+.back-art-road-narrow {
+  stroke-width: 10;
+}
+
+.back-art-pin circle {
+  fill: #1e604e;
+  stroke: #fbfcf8;
+  stroke-width: 4;
+}
+
+.back-art-pin.back-art-pin-coral circle {
+  fill: #d76547;
+}
+
+.back-art-pin text {
+  fill: #fff;
+  font-family: "DM Sans", "Segoe UI", sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  text-anchor: middle;
+}
+
+.back-art-caption {
+  position: absolute;
+  right: 14px;
+  bottom: 12px;
+  padding: 5px 8px;
+  background: rgba(251, 252, 248, 0.86);
+  color: #536d62;
+  font-size: 0.57rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
 }
 
 .map-river {
@@ -1557,6 +1684,45 @@ body {
   justify-content: space-between;
   min-height: 112px;
   padding: 18px 22px 20px;
+}
+
+.city-card-back-bottom {
+  display: flex;
+  min-height: 112px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+}
+
+.city-card-back-bottom > div {
+  min-width: 0;
+}
+
+.city-card-back-bottom h3 {
+  max-width: 280px;
+  margin: 3px 0 0;
+  color: #183c35;
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 1.18rem;
+  font-weight: 600;
+  line-height: 1.15;
+}
+
+.city-card-back-bottom a {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  color: #1e604e;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.city-card-back-bottom a span {
+  color: #d76547;
+  font-size: 1rem;
 }
 
 .card-kicker {
@@ -1787,6 +1953,7 @@ body {
   .hero-description { font-size: 0.95rem; }
   .city-card { max-width: none; margin: 0 6px 12px 0; }
   .city-map-art { height: 230px; }
+  .city-back-art { height: 230px; }
   .hero-index { bottom: 16px; }
   .home-facts { grid-template-columns: repeat(3, 1fr); gap: 24px 12px; padding: 28px 2%; }
   .facts-intro { grid-column: 1 / -1; }

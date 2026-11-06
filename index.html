@@ -43,20 +43,52 @@
             <p class="hero-period">Período analisado <strong>Janeiro — Dezembro 2022</strong></p>
           </div>
 
-          <div class="city-card" aria-label="Resumo da ocupação de parques em Lisboa">
-            <div class="city-card-topline"><span>Lisboa · estacionamento</span><span class="live-mark"><i></i> Arquivo</span></div>
-            <div class="city-map-art" aria-hidden="true">
-              <span class="map-river"></span>
-              <span class="map-road road-one"></span><span class="map-road road-two"></span><span class="map-road road-three"></span>
-              <span class="map-district district-one"></span><span class="map-district district-two"></span><span class="map-district district-three"></span>
-              <i class="map-pin pin-one">P</i><i class="map-pin pin-two">P</i><i class="map-pin pin-three">P</i><i class="map-pin pin-four">P</i><i class="map-pin pin-five">P</i>
-              <span class="map-caption">38°43′ N&nbsp; 9°08′ W</span>
+          <div class="city-card" id="cityCard" role="group" aria-label="Cartão interativo de Lisboa e estacionamento">
+            <div class="city-card-inner">
+              <div class="city-card-face city-card-front">
+                <div class="city-card-topline"><span>Lisboa · estacionamento</span><span class="live-mark"><i></i> Arquivo</span></div>
+                <div class="city-map-art" aria-hidden="true">
+                  <span class="map-river"></span>
+                  <span class="map-road road-one"></span><span class="map-road road-two"></span><span class="map-road road-three"></span>
+                  <span class="map-district district-one"></span><span class="map-district district-two"></span><span class="map-district district-three"></span>
+                  <i class="map-pin pin-one">P</i><i class="map-pin pin-two">P</i><i class="map-pin pin-three">P</i><i class="map-pin pin-four">P</i><i class="map-pin pin-five">P</i>
+                  <span class="map-caption">38°43′ N&nbsp; 9°08′ W</span>
+                </div>
+                <div class="city-card-bottom">
+                  <div><span class="card-kicker">Ocupação média em dezembro</span><strong id="homeOccupancy">47<small>%</small></strong></div>
+                  <div class="card-aside"><span class="trend-mark">↗</span><span>Último mês<br>do período</span></div>
+                </div>
+              </div>
+              <div class="city-card-face city-card-back" aria-hidden="true">
+                <div class="city-card-topline"><span>Lisboa · lugar a lugar</span><span class="live-mark"><i></i> Descobrir</span></div>
+                <div class="city-back-art" aria-hidden="true">
+                  <svg viewBox="0 0 600 300" role="img" aria-label="Ilustração abstrata de ruas, rio e parques de estacionamento">
+                    <path class="back-art-park park-a" d="m45 42 150-20 45 74-100 70-105-35z"></path>
+                    <path class="back-art-park park-b" d="m300 35 128 8 44 82-120 40-80-48z"></path>
+                    <path class="back-art-river" d="M470-20h170v350H395c40-75 61-148 75-350z"></path>
+                    <path class="back-art-road" d="M-20 240 620 0"></path>
+                    <path class="back-art-road" d="M10 60 510 300"></path>
+                    <path class="back-art-road back-art-road-narrow" d="M255-20 375 320"></path>
+                    <g class="back-art-pin" transform="translate(165 110)"><circle r="19"></circle><text y="6">P</text></g>
+                    <g class="back-art-pin back-art-pin-coral" transform="translate(350 190)"><circle r="19"></circle><text y="6">P</text></g>
+                    <g class="back-art-pin" transform="translate(438 90)"><circle r="19"></circle><text y="6">P</text></g>
+                  </svg>
+                  <span class="back-art-caption">UMA CIDADE, MUITAS ROTAS</span>
+                </div>
+                <div class="city-card-back-bottom">
+                  <div>
+                    <span class="card-kicker">Explora Lisboa</span>
+                    <h3>O próximo lugar pode estar mais perto.</h3>
+                  </div>
+                  <a href="dashboard.html" aria-label="Explorar parques no dashboard">Ver parques <span aria-hidden="true">→</span></a>
+                </div>
+              </div>
             </div>
-            <div class="city-card-bottom">
-              <div><span class="card-kicker">Ocupação média em dezembro</span><strong id="homeOccupancy">47<small>%</small></strong></div>
-              <div class="card-aside"><span class="trend-mark">↗</span><span>Último mês<br>do período</span></div>
-            </div>
-          </div>  
+            <button type="button" class="city-card-toggle" aria-controls="cityCard" aria-pressed="false" aria-label="Mostrar o verso do cartão">
+              <span class="city-card-toggle-front">Mais <span aria-hidden="true">↻</span></span>
+              <span class="city-card-toggle-back">Voltar <span aria-hidden="true">↻</span></span>
+            </button>
+          </div>
         </section>
 
         <section class="home-facts" aria-label="Dimensão dos dados">

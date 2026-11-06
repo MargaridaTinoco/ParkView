@@ -983,6 +983,58 @@ function renderHomeSummary() {
   if (occupancy) occupancy.innerHTML = `${CITY_MONTH_SERIES[CITY_MONTH_SERIES.length - 1]}<small>%</small>`;
 }
 
+function initializeCityCardFlip() {
+  const card = document.getElementById('cityCard');
+  if (!card) return;
+
+  const front = card.querySelector('.city-card-front');
+  const back = card.querySelector('.city-card-back');
+  const toggle = card.querySelector('.city-card-toggle');
+  const backLink = card.querySelector('.city-card-back-bottom a');
+  let isHovered = false;
+  let manualOverride = null;
+
+  const updateCardSide = () => {
+    const isFlipped = manualOverride === null ? isHovered : manualOverride;
+    card.classList.toggle('is-flipped', isFlipped);
+    front.setAttribute('aria-hidden', String(isFlipped));
+    back.setAttribute('aria-hidden', String(!isFlipped));
+    backLink.tabIndex = isFlipped ? 0 : -1;
+    toggle.setAttribute('aria-pressed', String(isFlipped));
+    toggle.setAttribute('aria-label', isFlipped ? 'Mostrar a frente do cartão' : 'Mostrar o verso do cartão');
+  };
+
+  card.addEventListener('pointerenter', (event) => {
+    if (event.pointerType !== 'mouse') return;
+    isHovered = true;
+    updateCardSide();
+  });
+
+  card.addEventListener('pointerleave', (event) => {
+    if (event.pointerType !== 'mouse') return;
+    isHovered = false;
+    if (!back.contains(document.activeElement)) manualOverride = null;
+    updateCardSide();
+  });
+
+  toggle.addEventListener('click', () => {
+    const isFlipped = manualOverride === null ? isHovered : manualOverride;
+    manualOverride = !isFlipped;
+    updateCardSide();
+  });
+
+  card.addEventListener('focusout', () => {
+    window.setTimeout(() => {
+      if (!card.contains(document.activeElement)) {
+        manualOverride = null;
+        updateCardSide();
+      }
+    }, 0);
+  });
+
+  updateCardSide();
+}
+
 function bindEvents() {
   document.getElementById('zoneFilter').addEventListener('change', (event) => {
     state.zoneFilter = event.target.value;
@@ -1017,6 +1069,7 @@ function bindEvents() {
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
+  initializeCityCardFlip();
   renderHomeSummary();
   if (document.getElementById('mapCanvas')) {
     bindEvents();

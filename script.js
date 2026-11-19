@@ -1,69 +1,67 @@
 const MONTHS = [
-  { key: 'jul', label: 'Jul', adjustment: -1 },
-  { key: 'ago', label: 'Ago', adjustment: -2 },
-  { key: 'set', label: 'Set', adjustment: 0 },
-  { key: 'out', label: 'Out', adjustment: 1 },
-  { key: 'nov', label: 'Nov', adjustment: 2 },
-  { key: 'dez', label: 'Dez', adjustment: 3 },
+  { key: 'jan', label: 'Jan', name: 'Janeiro' },
+  { key: 'fev', label: 'Fev', name: 'Fevereiro' },
+  { key: 'mar', label: 'Mar', name: 'Março' },
+  { key: 'abr', label: 'Abr', name: 'Abril' },
+  { key: 'mai', label: 'Mai', name: 'Maio' },
+  { key: 'jun', label: 'Jun', name: 'Junho' },
+  { key: 'jul', label: 'Jul', name: 'Julho' },
+  { key: 'ago', label: 'Ago', name: 'Agosto' },
+  { key: 'set', label: 'Set', name: 'Setembro' },
+  { key: 'out', label: 'Out', name: 'Outubro' },
+  { key: 'nov', label: 'Nov', name: 'Novembro' },
+  { key: 'dez', label: 'Dez', name: 'Dezembro' },
 ];
 
-const CITY_MONTH_SERIES = [43, 44, 44, 45, 46, 47];
+// Preenchidos a partir da API (/api/parks), que lê a base de dados TiDB.
+let PARKS = [];
+let ZONE_META = {};
+let CITY_MONTH_SERIES = Array(12).fill(null);
 
-const ZONE_META = {
-  'avenidas-novas': { label: 'Avenidas Novas', color: '#ebf5f8' },
-  'arroios': { label: 'Arroios', color: '#eef7f2' },
-  'santo-antonio': { label: 'Santo António', color: '#eff8f9' },
-  'alvalade': { label: 'Alvalade', color: '#eef4fb' },
-  'santa-maria-maior': { label: 'Santa Maria Maior', color: '#f6f1f9' },
-};
+function slugify(text) {
+  return String(text).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+}
 
-const PARKS = [
-  { id: 1, name: 'Atrium Saldanha', zoneId: 'avenidas-novas', capacity: 420, occupancy: 88, maximum: 98, x: 250, y: 140 },
-  { id: 2, name: 'Campo Pequeno', zoneId: 'avenidas-novas', capacity: 310, occupancy: 70, maximum: 91, x: 205, y: 140 },
-  { id: 3, name: 'Saldanha Residence', zoneId: 'avenidas-novas', capacity: 260, occupancy: 66, maximum: 87, x: 280, y: 170 },
-  { id: 4, name: 'Picoas Plaza', zoneId: 'avenidas-novas', capacity: 190, occupancy: 61, maximum: 82, x: 330, y: 115 },
-  { id: 5, name: 'Duque d’Ávila', zoneId: 'avenidas-novas', capacity: 215, occupancy: 58, maximum: 80, x: 230, y: 210 },
-  { id: 6, name: 'Berna', zoneId: 'avenidas-novas', capacity: 180, occupancy: 49, maximum: 73, x: 315, y: 210 },
-  { id: 7, name: 'Entrecampos', zoneId: 'avenidas-novas', capacity: 340, occupancy: 46, maximum: 69, x: 360, y: 250 },
-  { id: 8, name: 'Gulbenkian', zoneId: 'avenidas-novas', capacity: 280, occupancy: 43, maximum: 68, x: 175, y: 235 },
-  { id: 9, name: 'Palácio Sotto Mayor', zoneId: 'avenidas-novas', capacity: 225, occupancy: 55, maximum: 79, x: 270, y: 250 },
-  { id: 10, name: 'Arco Cego', zoneId: 'arroios', capacity: 300, occupancy: 82, maximum: 96, x: 410, y: 140 },
-  { id: 11, name: 'Chile', zoneId: 'arroios', capacity: 180, occupancy: 68, maximum: 89, x: 455, y: 175 },
-  { id: 12, name: 'Alameda', zoneId: 'arroios', capacity: 240, occupancy: 63, maximum: 85, x: 540, y: 150 },
-  { id: 13, name: 'Anjos 70', zoneId: 'arroios', capacity: 165, occupancy: 59, maximum: 81, x: 500, y: 210 },
-  { id: 14, name: 'Mercado do Forno', zoneId: 'arroios', capacity: 140, occupancy: 52, maximum: 76, x: 565, y: 205 },
-  { id: 15, name: 'Instituto Superior Técnico', zoneId: 'arroios', capacity: 320, occupancy: 48, maximum: 72, x: 465, y: 260 },
-  { id: 16, name: 'Martim Moniz Norte', zoneId: 'arroios', capacity: 210, occupancy: 65, maximum: 88, x: 400, y: 220 },
-  { id: 17, name: 'Fonte Luminosa', zoneId: 'arroios', capacity: 195, occupancy: 41, maximum: 67, x: 470, y: 305 },
-  { id: 18, name: 'Penha de França', zoneId: 'arroios', capacity: 155, occupancy: 45, maximum: 70, x: 555, y: 275 },
-  { id: 19, name: 'Marquês de Pombal', zoneId: 'santo-antonio', capacity: 360, occupancy: 73, maximum: 93, x: 305, y: 95 },
-  { id: 20, name: 'Alexandre Herculano', zoneId: 'santo-antonio', capacity: 185, occupancy: 69, maximum: 89, x: 355, y: 145 },
-  { id: 21, name: 'Rato', zoneId: 'santo-antonio', capacity: 210, occupancy: 62, maximum: 84, x: 390, y: 110 },
-  { id: 22, name: 'Avenida da Liberdade', zoneId: 'santo-antonio', capacity: 330, occupancy: 58, maximum: 82, x: 290, y: 70 },
-  { id: 23, name: 'Mayer', zoneId: 'santo-antonio', capacity: 160, occupancy: 54, maximum: 78, x: 360, y: 70 },
-  { id: 24, name: 'Largo do Rato', zoneId: 'santo-antonio', capacity: 145, occupancy: 51, maximum: 75, x: 420, y: 90 },
-  { id: 25, name: 'Amoreiras', zoneId: 'santo-antonio', capacity: 380, occupancy: 47, maximum: 71, x: 335, y: 190 },
-  { id: 26, name: 'Restauradores', zoneId: 'santo-antonio', capacity: 230, occupancy: 64, maximum: 86, x: 430, y: 70 },
-  { id: 27, name: 'Rua Castilho', zoneId: 'santo-antonio', capacity: 190, occupancy: 44, maximum: 69, x: 435, y: 145 },
-  { id: 28, name: 'Roma', zoneId: 'alvalade', capacity: 275, occupancy: 77, maximum: 94, x: 160, y: 355 },
-  { id: 29, name: 'Alvalade XXI', zoneId: 'alvalade', capacity: 310, occupancy: 64, maximum: 86, x: 215, y: 325 },
-  { id: 30, name: 'Areeiro', zoneId: 'alvalade', capacity: 245, occupancy: 58, maximum: 80, x: 250, y: 370 },
-  { id: 31, name: 'Av. de Roma', zoneId: 'alvalade', capacity: 190, occupancy: 55, maximum: 78, x: 170, y: 410 },
-  { id: 32, name: 'Praça de Alvalade', zoneId: 'alvalade', capacity: 220, occupancy: 50, maximum: 74, x: 120, y: 305 },
-  { id: 33, name: 'Cidade Universitária', zoneId: 'alvalade', capacity: 420, occupancy: 39, maximum: 65, x: 65, y: 390 },
-  { id: 34, name: 'Bela Vista', zoneId: 'alvalade', capacity: 340, occupancy: 36, maximum: 60, x: 280, y: 430 },
-  { id: 35, name: 'José Alvalade', zoneId: 'alvalade', capacity: 280, occupancy: 42, maximum: 68, x: 155, y: 270 },
-  { id: 36, name: 'Campo Grande', zoneId: 'alvalade', capacity: 370, occupancy: 45, maximum: 70, x: 225, y: 455 },
-  { id: 37, name: 'Chão do Loureiro', zoneId: 'santa-maria-maior', capacity: 190, occupancy: 68, maximum: 89, x: 520, y: 330 },
-  { id: 38, name: 'Praça da Figueira', zoneId: 'santa-maria-maior', capacity: 230, occupancy: 65, maximum: 87, x: 600, y: 300 },
-  { id: 39, name: 'Portas do Sol', zoneId: 'santa-maria-maior', capacity: 145, occupancy: 61, maximum: 84, x: 610, y: 350 },
-  { id: 40, name: 'Campo das Cebolas', zoneId: 'santa-maria-maior', capacity: 260, occupancy: 57, maximum: 80, x: 525, y: 385 },
-  { id: 41, name: 'Largo da Graça', zoneId: 'santa-maria-maior', capacity: 130, occupancy: 53, maximum: 77, x: 575, y: 420 },
-  { id: 42, name: 'Baixa-Chiado', zoneId: 'santa-maria-maior', capacity: 320, occupancy: 49, maximum: 73, x: 650, y: 250 },
-  { id: 43, name: 'Terreiro do Paço', zoneId: 'santa-maria-maior', capacity: 290, occupancy: 43, maximum: 69, x: 675, y: 330 },
-  { id: 44, name: 'Mouraria', zoneId: 'santa-maria-maior', capacity: 160, occupancy: 47, maximum: 72, x: 470, y: 365 },
-  { id: 45, name: 'Sé', zoneId: 'santa-maria-maior', capacity: 175, occupancy: 40, maximum: 66, x: 660, y: 395 },
-];
+async function loadDashboardData() {
+  const response = await fetch('/api/parks', { headers: { Accept: 'application/json' } });
+  if (!response.ok) {
+    throw new Error(`Pedido dos dados dos parques falhou (${response.status}).`);
+  }
+
+  const data = await response.json();
+  if (!data || !Array.isArray(data.parks) || !Array.isArray(data.cityMonthly)) {
+    throw new TypeError('A resposta da API dos parques tem um formato inválido.');
+  }
+
+  const zones = {};
+  PARKS = data.parks.map((park) => {
+    const zoneId = slugify(park.zone);
+    zones[zoneId] = { label: park.zone };
+    return {
+      id: park.id,
+      name: park.name,
+      zoneId,
+      capacity: park.capacity || 0,
+      occupancy: park.occupancy ?? 0,
+      maximum: park.peak ?? 0,
+      monthly: park.monthly,
+      cluster: park.cluster,
+      demandProfile: park.demandProfile,
+    };
+  });
+  ZONE_META = Object.fromEntries(
+    Object.entries(zones).sort(([, a], [, b]) => a.label.localeCompare(b.label, 'pt')),
+  );
+  CITY_MONTH_SERIES = data.cityMonthly;
+
+  parkLocations = new Map();
+  data.parks.forEach((park) => {
+    if (Number.isFinite(park.latitude) && Number.isFinite(park.longitude)) {
+      parkLocations.set(park.id, { latitude: park.latitude, longitude: park.longitude });
+    }
+  });
+}
 
 const FAVORITES_STORAGE_KEY = 'parkview:favorites:v1';
 
@@ -77,7 +75,8 @@ function readFavoriteParkIds() {
       throw new TypeError('Os favoritos guardados não têm o formato esperado.');
     }
 
-    const favoriteIds = parsedFavorites.filter((id) => PARKS.some((park) => park.id === id));
+    // Os parques só chegam da API depois; aqui guardam-se apenas ids válidos (ex.: "P016").
+    const favoriteIds = parsedFavorites.filter((id) => typeof id === 'string');
     return { ids: new Set(favoriteIds), error: '' };
   } catch (error) {
     console.error('Não foi possível carregar os parques favoritos.', error);
@@ -112,46 +111,36 @@ const parkInfoState = {
 const numberFormatter = new Intl.NumberFormat('pt-PT');
 const currencyFormatter = new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' });
 
+// Só os campos que existem nos dados da EMEL (ver server.js, /api/parks/:id/info).
 const parkInfoFields = {
   places: [
     { key: 'total_spaces', label: 'Lugares totais', format: 'number' },
     { key: 'reduced_mobility_spaces', label: 'Mobilidade reduzida', format: 'number' },
-    { key: 'electric_charging_spaces', label: 'Carregamento elétrico', format: 'number' },
   ],
   schedules: [
-    { key: 'service_hours', label: 'Horário de serviço', format: 'text' },
-    { key: 'customer_service_hours', label: 'Horário do serviço ao cliente', format: 'text' },
+    { key: 'service_hours', label: 'Horário de rotação', format: 'text' },
+    { key: 'subscription_hours', label: 'Horário de avenças', format: 'text' },
   ],
   prices: [
     { key: 'first_hour_price', label: 'Primeira hora', format: 'currency' },
     { key: 'daily_max_price', label: 'Máximo diário', format: 'currency' },
   ],
+  details: [
+    { key: 'park_type', label: 'Tipologia', format: 'text' },
+    { key: 'operation_mode', label: 'Modo de exploração', format: 'text' },
+  ],
+  transport: [
+    { key: 'nearest_metro', label: 'Metro mais próximo', format: 'text' },
+    { key: 'nearest_metro_distance_m', label: 'Distância ao metro', format: 'meters' },
+    { key: 'bus_stops_300m', label: 'Paragens de autocarro (300 m)', format: 'number' },
+  ],
   products: [
     { key: 'subscriptions', label: 'Avenças', icon: 'pass' },
     { key: 'electric_charging', label: 'Carregamento elétrico', icon: 'bolt' },
-    { key: 'express_entry', label: 'Entrada express', icon: 'arrow' },
-    { key: 'multipass', label: 'Multipass', icon: 'grid' },
-    { key: 'reservations', label: 'Reservas', icon: 'calendar' },
-  ],
-  services: [
-    { key: 'support_24h', label: 'Apoio 24 horas', icon: 'clock' },
-    { key: 'automatic_payment_machine', label: 'Caixa de pagamento automático', icon: 'terminal' },
-    { key: 'cctv', label: 'CCTV', icon: 'camera' },
-    { key: 'elevator', label: 'Elevador', icon: 'elevator' },
-    { key: 'car_wash', label: 'Lavagem de veículos', icon: 'wash' },
   ],
   payments: [
-    { key: 'app_payment', label: 'Aplicação', icon: 'phone' },
-    { key: 'credit_card_payment', label: 'Cartão de crédito', icon: 'card' },
-    { key: 'cash_payment', label: 'Numerário', icon: 'cash' },
     { key: 'via_verde_payment', label: 'Via Verde', icon: 'toll' },
   ],
-  vehicles: [
-    { key: 'cars_allowed', label: 'Carro', icon: 'car' },
-    { key: 'vans_allowed', label: 'Furgão', icon: 'van' },
-    { key: 'motorcycles_allowed', label: 'Motocicleta', icon: 'motorcycle' },
-  ],
-  height: { key: 'max_height_cm', label: 'Altura máxima', icon: 'ruler', format: 'height' },
 };
 
 const parkInfoIconPaths = {
@@ -176,7 +165,6 @@ const parkInfoIconPaths = {
 };
 
 function getParkInfo(parkId) {
-  // TODO: Ligar este endpoint ao serviço backend que consulta a tabela park_info na base de dados.
   return fetch(`/api/parks/${encodeURIComponent(parkId)}/info`, {
     headers: { Accept: 'application/json' },
   }).then((response) => {
@@ -211,7 +199,7 @@ function formatParkInfoValue(value, format) {
   if (typeof value === 'boolean') return value ? 'Sim' : 'Não';
   if (format === 'currency' && Number.isFinite(Number(value))) return currencyFormatter.format(Number(value));
   if (format === 'number' && Number.isFinite(Number(value))) return numberFormatter.format(Number(value));
-  if (format === 'height' && Number.isFinite(Number(value))) return `${numberFormatter.format(Number(value))} cm`;
+  if (format === 'meters' && Number.isFinite(Number(value))) return `${numberFormatter.format(Number(value))} m`;
   return escapeParkInfoHtml(value);
 }
 
@@ -271,11 +259,10 @@ function renderParkInfoContent(container, selectedPark) {
     ...parkInfoFields.places,
     ...parkInfoFields.schedules,
     ...parkInfoFields.prices,
+    ...parkInfoFields.details,
+    ...parkInfoFields.transport,
     ...parkInfoFields.products,
-    ...parkInfoFields.services,
     ...parkInfoFields.payments,
-    ...parkInfoFields.vehicles,
-    parkInfoFields.height,
   ];
   if (!allFields.some(({ key }) => hasParkInfoValue(data[key]))) {
     container.setAttribute('aria-busy', 'false');
@@ -296,11 +283,10 @@ function renderParkInfoContent(container, selectedPark) {
         ${renderParkInfoTable('Lugares', parkInfoFields.places, data)}
       </div>
       <div class="park-info-column">
+        ${renderParkInfoTable('Caracterização', parkInfoFields.details, data)}
+        ${renderParkInfoTable('Transportes próximos', parkInfoFields.transport, data)}
         ${renderParkInfoGroup('Produtos', parkInfoFields.products, data)}
-        ${renderParkInfoGroup('Serviços', parkInfoFields.services, data)}
         ${renderParkInfoGroup('Forma de pagamento', parkInfoFields.payments, data)}
-        ${renderParkInfoGroup('Veículos aptos', parkInfoFields.vehicles, data)}
-        ${renderParkInfoGroup('Altura máxima', [parkInfoFields.height], data)}
       </div>
     </div>
   `;
@@ -349,25 +335,23 @@ function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
 
-function getMonthAdjustment(monthKey) {
-  if (monthKey === 'all') return 0;
-  const month = MONTHS.find((item) => item.key === monthKey);
-  return month ? month.adjustment : 0;
-}
-
 function getEffectiveOccupancy(park, monthKey = 'all') {
-  const adjusted = park.occupancy + getMonthAdjustment(monthKey);
-  return clamp(adjusted, 0, 99);
+  if (monthKey === 'all') return park.occupancy;
+  const monthIndex = MONTHS.findIndex((item) => item.key === monthKey);
+  const value = park.monthly?.[monthIndex];
+  return clamp(value ?? park.occupancy, 0, 100);
 }
 
+// Limites ajustados aos dados reais de 2022 (taxas médias entre 13% e 71%);
+// ficam próximos dos perfis de procura do clustering (C1/C3/C2).
 function getParkPressureClass(value) {
-  if (value < 50) return 'low';
-  if (value < 70) return 'medium';
+  if (value < 30) return 'low';
+  if (value < 50) return 'medium';
   return 'high';
 }
 
 function getSelectedPark() {
-  return PARKS.find((park) => park.id === Number(state.selectedParkId)) || null;
+  return PARKS.find((park) => park.id === state.selectedParkId) || null;
 }
 
 function getFilteredParks() {
@@ -376,7 +360,7 @@ function getFilteredParks() {
     : PARKS.filter((park) => park.zoneId === state.zoneFilter);
 
   if (state.parkFilter !== 'all') {
-    return byZone.filter((park) => park.id === Number(state.parkFilter));
+    return byZone.filter((park) => park.id === state.parkFilter);
   }
 
   return byZone;
@@ -436,7 +420,7 @@ function updateFilterOptions() {
   });
   parkSelect.innerHTML = parkOptions.join('');
 
-  if (state.parkFilter !== 'all' && !relevantParks.some((park) => park.id === Number(state.parkFilter))) {
+  if (state.parkFilter !== 'all' && !relevantParks.some((park) => park.id === state.parkFilter)) {
     state.parkFilter = 'all';
   }
   parkSelect.value = state.parkFilter;
@@ -448,13 +432,16 @@ function renderKpis() {
   const totalCapacity = filteredParks.reduce((sum, park) => sum + park.capacity, 0);
   const occupancyRate = getCityWeightedOccupancy(state.monthFilter);
   const critical = getCriticalPark(state.monthFilter);
-  const cityAvgMonth = CITY_MONTH_SERIES[MONTHS.findIndex((item) => item.key === 'dez')];
+  const peakMonthIndex = CITY_MONTH_SERIES.reduce(
+    (best, value, index) => (value !== null && (best < 0 || value > CITY_MONTH_SERIES[best]) ? index : best),
+    -1,
+  );
 
   const kpis = [
     {
       label: 'Lugares totais',
       value: `${numberFormatter.format(totalCapacity)}`,
-      subvalue: `${filteredParks.length} parques`,
+      subvalue: `${filteredParks.length} ${filteredParks.length === 1 ? "parque" : "parques"}`,
       badge: 'primary',
       type: 'total',
     },
@@ -475,8 +462,8 @@ function renderKpis() {
     },
     {
       label: 'Mês de maior pressão',
-      value: 'Dezembro',
-      subvalue: `${cityAvgMonth}% ocupação média`,
+      value: peakMonthIndex >= 0 ? MONTHS[peakMonthIndex].name : 'Sem dados',
+      subvalue: peakMonthIndex >= 0 ? `${Math.round(CITY_MONTH_SERIES[peakMonthIndex])}% ocupação média` : '—',
       badge: 'danger',
       type: 'text',
     },
@@ -514,45 +501,6 @@ function renderKpis() {
       </article>
     `;
   }).join('');
-}
-
-async function loadParkLocations() {
-  const response = await fetch('park-locations.geojson', { headers: { Accept: 'application/geo+json, application/json' } });
-  if (!response.ok) {
-    throw new Error(`Não foi possível carregar as localizações provisórias (${response.status}).`);
-  }
-
-  const data = await response.json();
-  if (data.type !== 'FeatureCollection' || !Array.isArray(data.features)) {
-    throw new TypeError('O ficheiro de localizações dos parques não tem um formato GeoJSON válido.');
-  }
-
-  const locations = new Map();
-  data.features.forEach((feature) => {
-    const parkId = Number(feature.properties?.parkId);
-    const coordinates = feature.geometry?.coordinates;
-    if (
-      Number.isInteger(parkId)
-      && feature.geometry?.type === 'Point'
-      && Array.isArray(coordinates)
-      && Number.isFinite(coordinates[0])
-      && Number.isFinite(coordinates[1])
-      && coordinates[0] >= -180
-      && coordinates[0] <= 180
-      && coordinates[1] >= -90
-      && coordinates[1] <= 90
-    ) {
-      locations.set(parkId, { longitude: coordinates[0], latitude: coordinates[1] });
-    }
-  });
-
-  if (!locations.size) {
-    throw new TypeError('O ficheiro de localizações não contém coordenadas válidas.');
-  }
-  if (locations.size !== PARKS.length) {
-    throw new TypeError(`O ficheiro de localizações contém ${locations.size} de ${PARKS.length} parques.`);
-  }
-  parkLocations = locations;
 }
 
 function initializeParkMap() {
@@ -597,7 +545,7 @@ function renderMap() {
 
     const occupancy = getEffectiveOccupancy(park, state.monthFilter);
     const pressureClass = getParkPressureClass(occupancy);
-    const isSelected = Number(state.selectedParkId) === park.id;
+    const isSelected = state.selectedParkId === park.id;
     const isVisible = visibleParkIds.has(park.id);
     const icon = window.L.divIcon({
       className: 'park-leaflet-icon',
@@ -608,11 +556,11 @@ function renderMap() {
     const marker = window.L.marker([location.latitude, location.longitude], {
       icon,
       keyboard: true,
-      title: `${park.name} — localização aproximada`,
-      alt: `${park.name}, ${ZONE_META[park.zoneId].label}, localização aproximada`,
+      title: park.name,
+      alt: `${park.name}, ${ZONE_META[park.zoneId].label}`,
     });
     marker.bindTooltip(
-      `${park.name}<br>${ZONE_META[park.zoneId].label}<br>Ocupação: ${Math.round(occupancy)}%<br>Localização aproximada`,
+      `${park.name}<br>${ZONE_META[park.zoneId].label}<br>Ocupação: ${Math.round(occupancy)}%`,
     );
     marker.on('click', () => {
       state.selectedParkId = park.id;
@@ -622,7 +570,7 @@ function renderMap() {
     marker.addTo(parkMarkersLayer);
   });
 
-  if (selectedPark && Number(lastMappedParkId) !== selectedPark.id) {
+  if (selectedPark && lastMappedParkId !== selectedPark.id) {
     const location = parkLocations.get(selectedPark.id);
     if (location) {
       parkMap.setView(
@@ -686,7 +634,8 @@ function renderParkDetail() {
       <div class="detail-item"><span>Freguesia</span><strong>${ZONE_META[selectedPark.zoneId].label}</strong></div>
       <div class="detail-item"><span>Capacidade</span><strong>${numberFormatter.format(selectedPark.capacity)}</strong></div>
       <div class="detail-item"><span>Taxa média</span><strong>${Math.round(occupancy)}%</strong></div>
-      <div class="detail-item"><span>Taxa máxima</span><strong>${selectedPark.maximum}%</strong></div>
+      <div class="detail-item"><span>Pico (percentil 90)</span><strong>${Math.round(selectedPark.maximum)}%</strong></div>
+      <div class="detail-item"><span>Perfil de procura</span><strong>${selectedPark.demandProfile || '—'}</strong></div>
     </div>
   `;
 
@@ -721,7 +670,7 @@ function renderFavorites() {
 
   favoritesList.querySelectorAll('.favorite-select').forEach((button) => {
     button.addEventListener('click', () => {
-      const parkId = Number(button.getAttribute('data-park-id'));
+      const parkId = button.getAttribute('data-park-id');
       const park = PARKS.find((item) => item.id === parkId);
       state.selectedParkId = parkId;
       state.selectedZoneId = park.zoneId;
@@ -733,7 +682,7 @@ function renderFavorites() {
 
   favoritesList.querySelectorAll('.favorite-toggle').forEach((button) => {
     button.addEventListener('click', () => {
-      toggleFavorite(Number(button.getAttribute('data-park-id')));
+      toggleFavorite(button.getAttribute('data-park-id'));
     });
   });
 }
@@ -817,7 +766,7 @@ function renderRanking() {
   const parks = [...getFilteredParks()].sort((a, b) => getEffectiveOccupancy(b, state.monthFilter) - getEffectiveOccupancy(a, state.monthFilter)).slice(0, 5);
 
   rankingList.innerHTML = parks.map((park, index) => {
-    const selected = Number(state.selectedParkId) === park.id;
+    const selected = state.selectedParkId === park.id;
     const occupancy = Math.round(getEffectiveOccupancy(park, state.monthFilter));
     return `
       <button type="button" class="ranking-row ${selected ? 'is-selected' : ''}" data-park-id="${park.id}" aria-label="Selecionar parque ${park.name}, ${occupancy}% de ocupação">
@@ -835,7 +784,7 @@ function renderRanking() {
 
   rankingList.querySelectorAll('.ranking-row').forEach((row) => {
     row.addEventListener('click', () => {
-      const parkId = Number(row.getAttribute('data-park-id'));
+      const parkId = row.getAttribute('data-park-id');
       state.selectedParkId = parkId;
       state.selectedZoneId = PARKS.find((park) => park.id === parkId)?.zoneId || 'all';
       state.zoneFilter = state.selectedZoneId;
@@ -848,13 +797,10 @@ function getSelectedParkSeries() {
   const selectedPark = getSelectedPark();
   if (!selectedPark) return null;
 
-  return MONTHS.map((item) => {
-    const adjusted = clamp(selectedPark.occupancy + item.adjustment, 0, 99);
-    return {
-      month: item.label,
-      value: adjusted,
-    };
-  });
+  return MONTHS.map((item, index) => ({
+    month: item.label,
+    value: Math.round(selectedPark.monthly?.[index] ?? 0),
+  }));
 }
 
 function renderMonthlyChart() {
@@ -875,7 +821,7 @@ function renderMonthlyChart() {
     <span class="chart-legend-item"><i class="chart-legend-dot city"></i>Média de Lisboa</span>
     ${selectedPark ? `<span class="chart-legend-item"><i class="chart-legend-dot selected"></i>${selectedPark.name}</span>` : ''}
   `;
-  const citySeries = MONTHS.map((item, index) => ({ month: item.label, value: CITY_MONTH_SERIES[index] }));
+  const citySeries = MONTHS.map((item, index) => ({ month: item.label, value: Math.round(CITY_MONTH_SERIES[index] ?? 0) }));
   const groupWidth = chartWidth / citySeries.length;
   const barWidth = selectedParkSeries ? 24 : 38;
   const yScale = (value) => padding.top + chartHeight - (value / maxValue) * chartHeight;
@@ -944,7 +890,7 @@ function hideTooltip() {
 }
 
 function syncSelectedStateFromFilters() {
-  const currentPark = state.parkFilter === 'all' ? null : PARKS.find((park) => park.id === Number(state.parkFilter));
+  const currentPark = state.parkFilter === 'all' ? null : PARKS.find((park) => park.id === state.parkFilter);
   if (currentPark) {
     state.selectedParkId = currentPark.id;
     state.selectedZoneId = currentPark.zoneId;
@@ -980,7 +926,8 @@ function renderHomeSummary() {
 
   if (parkCount) parkCount.textContent = String(PARKS.length).padStart(2, '0');
   if (zoneCount) zoneCount.textContent = String(Object.keys(ZONE_META).length).padStart(2, '0');
-  if (occupancy) occupancy.innerHTML = `${CITY_MONTH_SERIES[CITY_MONTH_SERIES.length - 1]}<small>%</small>`;
+  const december = CITY_MONTH_SERIES[CITY_MONTH_SERIES.length - 1];
+  if (occupancy && december !== null) occupancy.innerHTML = `${Math.round(december)}<small>%</small>`;
 }
 
 function initializeCityCardFlip() {
@@ -1058,7 +1005,7 @@ function bindEvents() {
     if (state.parkFilter === 'all') {
       state.selectedParkId = null;
     } else {
-      const park = PARKS.find((item) => item.id === Number(state.parkFilter));
+      const park = PARKS.find((item) => item.id === state.parkFilter);
       state.selectedParkId = park ? park.id : null;
       state.selectedZoneId = park ? park.zoneId : state.zoneFilter;
       state.zoneFilter = park ? park.zoneId : state.zoneFilter;
@@ -1070,6 +1017,15 @@ function bindEvents() {
 
 window.addEventListener('DOMContentLoaded', async () => {
   initializeCityCardFlip();
+
+  let dataError = null;
+  try {
+    await loadDashboardData();
+  } catch (error) {
+    dataError = error;
+    console.error('Não foi possível carregar os dados dos parques.', error);
+  }
+
   renderHomeSummary();
   if (document.getElementById('mapCanvas')) {
     bindEvents();
@@ -1079,11 +1035,8 @@ window.addEventListener('DOMContentLoaded', async () => {
       console.error('Não foi possível inicializar o mapa.', error);
     }
 
-    try {
-      await loadParkLocations();
-    } catch (error) {
-      console.error('Não foi possível carregar as localizações dos parques.', error);
-      document.getElementById('mapNotice').textContent = 'Não foi possível carregar as localizações dos parques. Tenta novamente mais tarde.';
+    if (dataError) {
+      document.getElementById('mapNotice').textContent = 'Não foi possível carregar os dados da base de dados. Confirma que o servidor (npm start) está a correr.';
     }
 
     updateDashboard();
